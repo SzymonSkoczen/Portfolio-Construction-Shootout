@@ -25,7 +25,7 @@ pytest                           # runs the sanity checks
 - [x] Data pipeline (yfinance prices, FRED risk-free rate, caching)
 - [x] Strategies
 - [x] Backtest engine (no look-ahead, weight drift, costs)
-- [ ] Sanity tests
+- [x] Sanity tests
 - [ ] Metrics
 - [ ] Charts
 - [ ] Robustness checks
