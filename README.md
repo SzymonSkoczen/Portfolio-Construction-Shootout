@@ -23,7 +23,7 @@ pytest                           # runs the sanity checks
 
 - [x] Project structure and configuration (`config.py`)
 - [x] Data pipeline (yfinance prices, FRED risk-free rate, caching)
-- [ ] Strategies
+- [x] Strategies
 - [ ] Backtest engine (no look-ahead, weight drift, costs)
 - [ ] Sanity tests
 - [ ] Metrics
