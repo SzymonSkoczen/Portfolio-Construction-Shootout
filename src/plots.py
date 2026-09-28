@@ -180,11 +180,14 @@ def plot_weights(result: BacktestResult, out_dir: Path = config.FIGURES_DIR) -> 
     return _save(fig, f"weights_{slug}.png", out_dir)
 
 
-def plot_robustness_sharpe(table: pd.DataFrame, out_dir: Path = config.FIGURES_DIR) -> Path:
+def plot_robustness_sharpe(
+    table: pd.DataFrame, period: str = "", out_dir: Path = config.FIGURES_DIR
+) -> Path:
     """
     Sharpe ratio by strategy across estimation windows and cost levels.
 
-    `table` needs columns: window, cost_bps, strategy, Sharpe.
+    `table` needs columns: window, cost_bps, strategy, Sharpe. `period` is a
+    label for the common evaluation period, shown in the title.
     One panel per estimation window, all sharing the same y-axis so they can
     be compared directly. A line falling steeply from left to right means
     that strategy is very sensitive to trading costs (high turnover).
@@ -206,7 +209,10 @@ def plot_robustness_sharpe(table: pd.DataFrame, out_dir: Path = config.FIGURES_D
         ax.set_xticks(sorted(table["cost_bps"].unique()))
     axes[0].set_ylabel("Sharpe ratio (after costs)")
     axes[-1].legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
-    fig.suptitle("Robustness: Sharpe ratio across estimation windows and costs", fontweight="bold", color=INK)
+    title = "Robustness: Sharpe ratio across estimation windows and costs"
+    if period:
+        title += f"\n(all runs evaluated on the same period: {period})"
+    fig.suptitle(title, fontweight="bold", color=INK)
     fig.tight_layout()
     return _save(fig, "robustness_sharpe.png", out_dir)
 

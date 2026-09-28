@@ -121,3 +121,17 @@ def test_metrics_on_known_series():
     # 252 days of a constant daily return compound to exactly one year of growth.
     daily = pd.Series([0.0003] * 252)
     assert cagr(daily) == pytest.approx(1.0003 ** 252 - 1)
+
+
+def test_robustness_trim_keeps_common_period(returns, risk_free):
+    """Trimming keeps only dates after the common start and resets the initial turnover."""
+    from src.robustness import trim
+
+    weights = compute_target_weights(returns, risk_free, STRATEGIES["Min Variance"], WINDOW)
+    full = simulate(returns, weights, COST_BPS)
+    start = weights.index[3]
+    trimmed = trim(full, start)
+
+    assert trimmed.returns.index[0] > start
+    assert trimmed.returns.equals(full.returns[full.returns.index > start])
+    assert trimmed.turnover.index[0] == start and trimmed.turnover.iloc[0] == 0.0

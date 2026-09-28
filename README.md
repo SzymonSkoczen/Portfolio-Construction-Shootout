@@ -28,7 +28,7 @@ pytest                           # runs the sanity checks
 - [x] Sanity tests
 - [x] Metrics
 - [x] Charts
-- [ ] Robustness checks
+- [x] Robustness checks
 - [ ] Final write-up
 
 See `project.context.md` and `technical_context.md` for the full specification.
