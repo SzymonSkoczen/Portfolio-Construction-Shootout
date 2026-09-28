@@ -1,0 +1,13 @@
+# Python environment and bytecode
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Cached downloads: re-created by running main.py, so they are not versioned
+data/raw/
+
+# Editor / OS clutter
+.DS_Store
+.vscode/
+.idea/
