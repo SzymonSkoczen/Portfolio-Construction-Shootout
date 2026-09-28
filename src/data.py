@@ -86,6 +86,15 @@ def download_prices(
 
     prices = prices[tickers]  # keep the configured column order
     prices.index.name = "Date"
+
+    # If we download during US trading hours, Yahoo returns today's row with a
+    # live intraday price, not a closing price. Keep completed sessions only,
+    # so results do not change depending on the time of day the code is run.
+    today_new_york = pd.Timestamp.now(tz="America/New_York").tz_localize(None).normalize()
+    if prices.index[-1] >= today_new_york:
+        logger.info("Dropping today's incomplete trading session (%s).", prices.index[-1].date())
+        prices = prices[prices.index < today_new_york]
+
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     prices.to_csv(cache_path)
     logger.info("Saved %d rows of prices to %s", len(prices), cache_path)
