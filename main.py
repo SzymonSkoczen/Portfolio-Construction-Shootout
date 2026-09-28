@@ -9,7 +9,11 @@ data -> strategies -> backtest -> metrics -> charts -> robustness checks.
 
 import logging
 
+import config
+from src.backtest import run_backtests
 from src.data import load_data
+from src.metrics import format_table, summarise
+from src.strategies import STRATEGIES
 
 
 def main() -> None:
@@ -22,7 +26,21 @@ def main() -> None:
         f"\nData ready: {asset_returns.shape[1]} assets, {len(asset_returns)} trading days "
         f"({asset_returns.index[0].date()} to {asset_returns.index[-1].date()})."
     )
-    print(f"Average annual risk-free rate: {risk_free.mean() * 252:.2%}")
+
+    # 2. Backtest every strategy with the base-case window and cost level.
+    results = run_backtests(asset_returns, risk_free, STRATEGIES)
+    oos = next(iter(results.values())).returns.index
+    print(f"Out-of-sample period: {oos[0].date()} to {oos[-1].date()} ({len(oos)} days).")
+
+    # 3. Metrics table (after costs), printed and saved.
+    table = summarise(results, risk_free, benchmark_returns)
+    config.TABLES_DIR.mkdir(parents=True, exist_ok=True)
+    table.to_csv(config.TABLES_DIR / "results.csv", float_format="%.6f")
+    print(
+        f"\nResults after costs (window={config.ESTIMATION_WINDOW} days, "
+        f"cost={config.TRANSACTION_COST_BPS} bps):\n"
+    )
+    print(format_table(table))
 
 
 if __name__ == "__main__":

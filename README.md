@@ -26,7 +26,7 @@ pytest                           # runs the sanity checks
 - [x] Strategies
 - [x] Backtest engine (no look-ahead, weight drift, costs)
 - [x] Sanity tests
-- [ ] Metrics
+- [x] Metrics
 - [ ] Charts
 - [ ] Robustness checks
 - [ ] Final write-up
