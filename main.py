@@ -13,6 +13,7 @@ import config
 from src.backtest import run_backtests
 from src.data import load_data
 from src.metrics import format_table, summarise
+from src.plots import plot_all
 from src.strategies import STRATEGIES
 
 
@@ -41,6 +42,10 @@ def main() -> None:
         f"cost={config.TRANSACTION_COST_BPS} bps):\n"
     )
     print(format_table(table))
+
+    # 4. Charts for the base case.
+    plot_all(results, benchmark_returns)
+    print(f"\nCharts saved to {config.FIGURES_DIR}")
 
 
 if __name__ == "__main__":
