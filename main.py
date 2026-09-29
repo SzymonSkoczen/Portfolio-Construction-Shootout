@@ -3,11 +3,12 @@ Run the full Portfolio Construction Shootout pipeline with a single command:
 
     python main.py
 
-Steps: data -> backtest all strategies -> metrics table -> charts ->
-robustness checks (estimation windows x transaction costs).
+Steps: data -> backtest all strategies -> metrics table -> significance tests
+-> charts -> robustness checks (estimation windows x transaction costs).
 
 Outputs:
     output/tables/results.csv      base-case metrics (after costs)
+    output/tables/significance.csv Sharpe difference tests vs equal weight
     output/tables/robustness.csv   metrics for every window x cost combination
     output/figures/*.png           all charts
 """
@@ -20,6 +21,7 @@ from src.data import load_data
 from src.metrics import format_table, summarise
 from src.plots import plot_all, plot_robustness_sharpe
 from src.robustness import run_robustness
+from src.significance import sharpe_significance
 from src.strategies import STRATEGIES
 
 
@@ -49,10 +51,16 @@ def main() -> None:
     )
     print(format_table(table))
 
-    # 4. Charts for the base case.
+    # 4. Is each strategy's Sharpe significantly different from equal weight's?
+    significance = sharpe_significance(results, risk_free)
+    significance.to_csv(config.TABLES_DIR / "significance.csv", float_format="%.6f")
+    print("\nSharpe ratio vs equal weight (H0: no difference). p > 0.05 = not significant:\n")
+    print(significance.round(3).to_string())
+
+    # 5. Charts for the base case.
     plot_all(results, benchmark_returns)
 
-    # 5. Robustness: every window x cost combination, scored on a common period.
+    # 6. Robustness: every window x cost combination, scored on a common period.
     robustness = run_robustness(asset_returns, risk_free, STRATEGIES)
     robustness.to_csv(config.TABLES_DIR / "robustness.csv", index=False, float_format="%.6f")
     plot_robustness_sharpe(robustness, period=robustness.attrs["period"])

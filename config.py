@@ -31,6 +31,11 @@ TRADING_DAYS = 252              # used to annualise returns, volatility and Shar
 ROBUSTNESS_WINDOWS = [252, 756, 1260]   # 1, 3 and 5 years
 ROBUSTNESS_COSTS_BPS = [0, 10, 25]
 
+# --- Significance tests -----------------------------------------------------
+BOOTSTRAP_SAMPLES = 5000        # resamples for the block bootstrap
+BOOTSTRAP_BLOCK_LENGTH = 21     # days per block (~1 month) to keep volatility clustering
+RANDOM_SEED = 42                # makes the bootstrap reproducible
+
 # --- Output / paths ---------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent
 RAW_DATA_DIR = PROJECT_ROOT / "data" / "raw"
