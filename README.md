@@ -7,12 +7,16 @@ This project backtests five long-only portfolio construction methods on the nine
 2026, with monthly rebalancing, no look-ahead bias and transaction costs. It revisits DeMiguel, Garlappi & Uppal
 (2009), *"Optimal Versus Naive Diversification: How Inefficient is the 1/N Portfolio Strategy?"*
 
-**Short answer: no, not in any meaningful way.** Over 2013–2026, after costs, no optimiser beat equal weight
-(1/N) on a risk-adjusted basis by more than noise. Risk parity finished level with it: 0.003 ahead on Sharpe in
-the base case, behind in all nine robustness settings. Every other method did clearly worse. 1/N had the highest
-Sharpe ratio in all nine robustness settings (1, 3 and 5 year estimation windows × 0, 10 and 25 bps costs). The reason is **estimation
-error**: optimisers treat noisy historical estimates as exact, so they concentrate the portfolio, trade too
-much, and pay for it out of sample.
+**Short answer: no.** Over 2013–2026, after costs, no optimiser beat equal weight (1/N) on a risk-adjusted
+basis. Risk parity finished level with it (0.003 ahead on Sharpe in the base case, behind in every robustness
+setting), and the other methods had lower Sharpe ratios. 1/N had the highest Sharpe ratio in all nine robustness
+settings (1, 3 and 5 year estimation windows × 0, 10 and 25 bps costs). The reason is **estimation error**:
+optimisers treat noisy historical estimates as exact, so they concentrate the portfolio, trade too much, and
+pay for it out of sample.
+
+**But none of the Sharpe differences is statistically significant** (all p-values between 0.34 and 0.92). So
+the evidence says optimisation did not *help*, not that it reliably *hurt*. With gaps this size, about 60–70
+years of data would be needed to tell the strategies apart.
 
 ![Growth of $1](output/figures/cumulative_returns.png)
 
@@ -56,6 +60,28 @@ available, so differences come from the window and cost settings rather than fro
 
 Full grid (all metrics): [`output/tables/robustness.csv`](output/tables/robustness.csv).
 
+### Are the differences statistically significant?
+
+Each strategy's Sharpe ratio is tested against equal weight's (H0: no difference), using daily excess returns
+over the base-case period. Two methods are used:
+
+- **Jobson-Korkie test with Memmel's correction:** a closed-form z-test that allows for the strategies being
+  highly correlated. It assumes normally distributed returns.
+- **Circular block bootstrap:** 5,000 resamples of 21-day blocks. It keeps volatility clustering and fat tails,
+  so it doesn't need that assumption.
+
+| Strategy | Sharpe diff vs 1/N | Memmel z | Memmel p | Bootstrap 95% CI | Bootstrap p |
+|---|---:|---:|---:|:-:|---:|
+| Min Variance | −0.128 | −0.88 | 0.38 | [−0.41, +0.17] | 0.38 |
+| Max Sharpe | −0.140 | −0.95 | 0.34 | [−0.46, +0.14] | 0.37 |
+| Risk Parity | +0.003 | +0.11 | 0.91 | [−0.04, +0.05] | 0.92 |
+| Min Var (Ledoit-Wolf) | −0.123 | −0.87 | 0.39 | [−0.40, +0.17] | 0.39 |
+
+The two methods agree, and every 95% interval contains zero. Nothing is significant at the 5% level, including
+Max Sharpe's gap, the largest at −0.14. The bootstrap standard error of a Sharpe difference is about 0.15, so
+detecting a gap of 0.13 at the 5% level would need roughly (1.96 × 0.15 / 0.13)² ≈ 5× more data: about 60–70
+years instead of 13.6. Full output: [`output/tables/significance.csv`](output/tables/significance.csv).
+
 ---
 
 ## Findings
@@ -65,8 +91,10 @@ the finding says so.
 
 **1. Equal weight is hard to beat (hypothesis supported).** 1/N has the highest Sharpe ratio in all nine
 robustness settings. The only time anything scored higher was risk parity in the base case, by 0.003 (0.726 vs
-0.723), a difference far too small to be meaningful. It estimates nothing, so it has zero estimation error, and it trades very little (2.4% a
-month, from undoing price drift), so costs barely affect it.
+0.723; p = 0.91). 1/N estimates nothing, so it has zero estimation error, and it trades very little (2.4% a
+month, from undoing price drift), so costs barely affect it. None of the optimisers' Sharpe gaps against 1/N is
+statistically significant, though. The fair conclusion is "optimisation added nothing", not "optimisation
+was proven worse".
 
 **2. Max Sharpe is unstable and expensive (mostly supported).** Max Sharpe is the only method that uses expected
 returns, and it holds more than 50% in a single sector in 73% of months. On average it holds fewer than three
@@ -82,24 +110,24 @@ did not solve it.
 ![Max Sharpe weights](output/figures/weights_max_sharpe.png)
 
 **3. Minimum variance lowers risk but does not improve risk-adjusted returns (hypothesis only partly
-supported).** Min variance does what it promises: the lowest volatility (13.9% vs 15.9%) and a smaller drawdown. But it concentrates in
-the calmest sectors (Consumer Staples, Utilities, Health Care), holds 50%+ in one sector 79% of the time, and
-misses the tech-led rally. Its Sharpe (0.595) is well below 1/N's (0.723) and only marginally above Max
-Sharpe's (0.583). In the robustness grid it beats Max Sharpe only at high costs with 1 and 3 year windows. So the
-hypothesis that min variance would beat Max Sharpe on risk-adjusted returns held for risk parity but only
-partly for min variance.
+supported).** Min variance does what it promises: the lowest volatility (13.9% vs 15.9%) and a smaller
+drawdown. But it concentrates in the calmest sectors (Consumer Staples, Utilities, Health Care), holds 50%+ in
+one sector 79% of the time, and misses the tech-led rally. Its Sharpe (0.595) is below 1/N's (0.723, p = 0.38)
+and only marginally above Max Sharpe's (0.583). In the robustness grid it beats Max Sharpe only at high costs
+with 1 and 3 year windows. So the hypothesis that min variance and risk parity would beat Max Sharpe on
+risk-adjusted returns held for risk parity but only partly for min variance.
 
 ![Min Variance weights](output/figures/weights_min_variance.png)
 
 **4. Risk parity ≈ equal weight (partly supported).** Risk parity finished level with 1/N rather than clearly
-beating it: marginally ahead in the base case (0.726 vs 0.723), marginally behind in every robustness setting. The nine
-sectors have fairly similar volatilities (13.8%–27.1% a year), so equalising risk contributions produces
+beating it: marginally ahead in the base case (0.726 vs 0.723), marginally behind in every robustness setting.
+The nine sectors have fairly similar volatilities (13.8%–27.1% a year), so equalising risk contributions produces
 weights close to 1/9 each: the largest weight averages just 16%. It trims Energy (the most volatile sector) and
 adds to Staples. This lowered volatility slightly (15.3% vs 15.9%) with almost no loss of return.
 
 **5. Shrinkage helps only when data is scarce (partly supported).** With a 1-year window, Ledoit-Wolf lifts min
-variance's Sharpe from 0.507 to 0.547 (at zero cost) and trims turnover a little (13.6% → 12.9% a month). With 3 and 5 year
-windows it changes almost nothing. The reason: the estimated shrinkage intensity is small (**3.7% for a 1-year
+variance's Sharpe from 0.507 to 0.547 (at zero cost) and trims turnover a little (13.6% → 12.9% a month).
+With 3 and 5 year windows it changes almost nothing. The reason: the estimated shrinkage intensity is small (**3.7% for a 1-year
 window, 1.8% for 3 years, 1.4% for 5 years**). With only 9 assets, even 252 days gives 28 observations per
 asset, so the sample covariance is already fairly reliable. Shrinkage is designed for problems with many assets
 and few observations.
@@ -166,7 +194,7 @@ if they fail. None failed in any run. Inputs are annualised (μ × 252, Σ × 25
 
 ### Sanity tests
 
-`pytest` runs 20 offline tests on synthetic data:
+`pytest` runs 23 offline tests on synthetic data:
 - weights sum to 1 and are non-negative
 - one month of 1/N matches a hand-computed buy-and-hold return
 - no NaN returns
@@ -175,6 +203,8 @@ if they fail. None failed in any run. Inputs are annualised (μ × 252, Σ × 25
 - costs equal turnover × bps
 - CAGR and drawdown match hand-worked answers
 - the robustness trimming logic
+- the significance tests: a series compared with itself gives p = 1, a large built-in Sharpe gap is detected
+  with the right sign, and the bootstrap is reproducible
 
 ---
 
@@ -208,6 +238,13 @@ extreme, probably noisy covariances towards the average, so the optimiser can't 
 1.4–3.7%, because 9 assets is a small problem relative to the data. That's why it mattered only with a 1-year
 window.
 
+**Is equal weight actually better, or just lucky?**
+We can't tell, and that's the honest answer. Both a Memmel z-test and a block bootstrap give p-values of
+0.34–0.92 for every Sharpe difference against 1/N. A Sharpe ratio estimated from 13.6 years of daily data has a
+standard error of roughly 0.15 for the difference between two strategies, so gaps of 0.13 would need about
+60–70 years of data to become significant. What the backtest does show is that the extra complexity, turnover
+and concentration of optimisation bought no measurable improvement.
+
 **What are the limitations, and what would you do with more time?**
 See the next two sections.
 
@@ -222,14 +259,14 @@ See the next two sections.
   number of assets relative to the estimation window.
 - **Simple cost model.** A flat 0–25 bps per unit of turnover. There is no bid-ask variation, market impact,
   taxes or financing costs. For liquid SPDR ETFs, 10 bps is conservative.
-- **No statistical test.** Sharpe differences of a few hundredths are very likely not statistically
-  significant. A Jobson-Korkie/Memmel test or a bootstrap would quantify this.
+- **Low statistical power.** 13.6 years is too short to separate Sharpe ratios that differ by about 0.1 (see
+  the significance tests), so the ranking of strategies could change in another sample.
 - **Hindsight in the universe.** The nine sectors were chosen knowing they all survived to today.
 - **Execution at the close.** Trading at the same close used for valuation is an idealisation.
 
 ## Possible extensions
 
-- Test whether Sharpe differences are significant (Memmel 2003; Ledoit & Wolf 2008 bootstrap).
+- Test the robustness grid for significance too, adjusting p-values for testing many strategies at once.
 - A larger universe (e.g. 49 Fama-French industries) to see how the number of assets changes the results.
 - A turnover penalty or no-trade band in the optimiser to reduce costs.
 - Shrink expected returns (James-Stein or Black-Litterman) instead of dropping them.
@@ -244,10 +281,10 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python main.py                   # downloads data, runs everything (~1 min), writes output/
-pytest                           # 20 sanity tests
+pytest                           # 23 sanity tests
 ```
 
-All parameters (tickers, dates, window, costs, robustness grid) live in [`config.py`](config.py).
+All parameters (tickers, dates, window, costs, robustness grid, bootstrap settings) live in [`config.py`](config.py).
 
 ## Project structure
 
@@ -260,11 +297,12 @@ All parameters (tickers, dates, window, costs, robustness grid) live in [`config
 │   ├── backtest.py      # monthly rebalance loop: no look-ahead, drift, costs
 │   ├── metrics.py       # CAGR, volatility, Sharpe, drawdown, turnover, costs
 │   ├── robustness.py    # window × cost grid on a common period
+│   ├── significance.py  # Memmel test and block bootstrap of Sharpe differences
 │   └── plots.py         # all charts
-├── tests/test_sanity.py # 20 offline sanity checks
+├── tests/test_sanity.py # 23 offline sanity checks
 ├── output/
 │   ├── figures/         # charts used in this README
-│   └── tables/          # results.csv, robustness.csv
+│   └── tables/          # results.csv, robustness.csv, significance.csv
 └── docs/                # original project and technical specification
 ```
 
@@ -274,7 +312,10 @@ All parameters (tickers, dates, window, costs, robustness grid) live in [`config
   1/N Portfolio Strategy? *Review of Financial Studies*, 22(5), 1915–1953.
 - Ledoit, O. & Wolf, M. (2004). A Well-Conditioned Estimator for Large-Dimensional Covariance Matrices.
   *Journal of Multivariate Analysis*, 88(2), 365–411.
+- Ledoit, O. & Wolf, M. (2008). Robust Performance Hypothesis Testing with the Sharpe Ratio. *Journal of
+  Empirical Finance*, 15(5), 850–859.
 - Maillard, S., Roncalli, T. & Teïletche, J. (2010). The Properties of Equally Weighted Risk Contribution
   Portfolios. *Journal of Portfolio Management*, 36(4), 60–70.
 - Michaud, R. (1989). The Markowitz Optimization Enigma: Is 'Optimized' Optimal? *Financial Analysts Journal*,
   45(1), 31–42.
+- Memmel, C. (2003). Performance Hypothesis Testing with the Sharpe Ratio. *Finance Letters*, 1, 21–23.

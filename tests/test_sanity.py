@@ -135,3 +135,40 @@ def test_robustness_trim_keeps_common_period(returns, risk_free):
     assert trimmed.returns.index[0] > start
     assert trimmed.returns.equals(full.returns[full.returns.index > start])
     assert trimmed.turnover.index[0] == start and trimmed.turnover.iloc[0] == 0.0
+
+
+def test_significance_identical_series_is_not_significant():
+    """Comparing a return series with itself: zero difference, p-value 1."""
+    from src.significance import block_bootstrap_test, memmel_test
+
+    x = np.random.default_rng(1).normal(0.0005, 0.01, 1000)
+    z, p = memmel_test(x, x)
+    assert z == 0.0 and p == 1.0
+    lower, upper, p_boot = block_bootstrap_test(x, x, n_samples=200)
+    assert lower == upper == 0.0
+    assert p_boot == 1.0
+
+
+def test_significance_detects_a_large_difference():
+    """
+    Two highly correlated series where one earns an extra 0.2% a day: a huge
+    Sharpe gap that both tests must flag as significant, with the right sign.
+    """
+    from src.significance import block_bootstrap_test, memmel_test
+
+    rng = np.random.default_rng(2)
+    base = rng.normal(0.0, 0.01, 2000)
+    better = base + 0.002 + rng.normal(0.0, 0.002, 2000)
+    z, p = memmel_test(better, base)
+    assert z > 0 and p < 0.01
+    lower, upper, p_boot = block_bootstrap_test(better, base, n_samples=500)
+    assert lower > 0 and p_boot < 0.01
+
+
+def test_bootstrap_is_reproducible():
+    """Same seed, same answer: results in the README can be regenerated exactly."""
+    from src.significance import block_bootstrap_test
+
+    rng = np.random.default_rng(3)
+    a, b = rng.normal(0.0005, 0.01, 800), rng.normal(0.0003, 0.01, 800)
+    assert block_bootstrap_test(a, b, n_samples=300) == block_bootstrap_test(a, b, n_samples=300)
